@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anti-Buli Word Search</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #fefefe;
+      text-align: center;
+      padding: 10px;
+    }
+    h1 {
+      font-size: 22px;
+      color: #222;
+    }
+    #word-list {
+      margin: 10px auto;
+      max-width: 90%;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .word {
+      margin: 4px 8px;
+      font-weight: bold;
+    }
+    table {
+      margin: 0 auto;
+      border-collapse: collapse;
+    }
+    td {
+      border: 1px solid #aaa;
+      padding: 10px;
+      width: 30px;
+      height: 30px;
+      user-select: none;
+      cursor: pointer;
+      font-size: 16px;
+      text-transform: uppercase;
+    }
+    td.selected {
+      background-color: #ffeb99;
+    }
+    td.found {
+      background-color: #a3e4d7;
+    }
+  </style>
+</head>
+<body>
+  <h1>Buli Fizikal - Jangan Diam, Bersuara Lawan Buli!</h1>
+  <div id="word-list"></div>
+  <table id="grid"></table>
+
+  <script>
+    const words = [
+      "buli", "fizikal", "lawan", "berani", "jangan diam",
+      "bersuara", "tolong saya", "hentikan buli", "jangan takut", "pertahankan diri",
+      "kata kesat", "luka", "sakit", "selamatkan", "lindungi diri",
+      "lapor guru", "rakan sokong", "tindakan segera", "hormat orang", "aman damai"
+    ];
+
+    const cleanWords = words.map(w => w.replace(/\s+/g, '').toLowerCase());
+
+    const gridSize = 18;
+    const table = document.getElementById("grid");
+    const wordList = document.getElementById("word-list");
+
+    cleanWords.forEach((word, i) => {
+      const span = document.createElement("span");
+      span.className = "word";
+      span.textContent = words[i];
+      span.id = `word-${word}`;
+      wordList.appendChild(span);
+    });
+
+    const grid = Array.from({ length: gridSize }, () => Array(gridSize).fill(''));
+
+    function randomInt(max) {
+      return Math.floor(Math.random() * max);
+    }
+
+    function placeWord(word) {
+      let placed = false;
+      while (!placed) {
+        const dir = Math.random() < 0.5 ? 'H' : 'V';
+        const reversed = Math.random() < 0.5;
+        const finalWord = reversed ? word.split('').reverse().join('') : word;
+        const row = randomInt(gridSize);
+        const col = randomInt(gridSize);
+
+        if (dir === 'H' && col + finalWord.length <= gridSize) {
+          let fits = true;
+          for (let i = 0; i < finalWord.length; i++) {
+            if (grid[row][col + i] && grid[row][col + i] !== finalWord[i]) fits = false;
+          }
+          if (fits) {
+            for (let i = 0; i < finalWord.length; i++) grid[row][col + i] = finalWord[i];
+            placed = true;
+          }
+        } else if (dir === 'V' && row + finalWord.length <= gridSize) {
+          let fits = true;
+          for (let i = 0; i < finalWord.length; i++) {
+            if (grid[row + i][col] && grid[row + i][col] !== finalWord[i]) fits = false;
+          }
+          if (fits) {
+            for (let i = 0; i < finalWord.length; i++) grid[row + i][col] = finalWord[i];
+            placed = true;
+          }
+        }
+      }
+    }
+
+    cleanWords.forEach(placeWord);
+
+    for (let i = 0; i < gridSize; i++) {
+      for (let j = 0; j < gridSize; j++) {
+        if (!grid[i][j]) grid[i][j] = String.fromCharCode(65 + randomInt(26)).toLowerCase();
+      }
+    }
+
+    let isMouseDown = false;
+    let selectedCells = [];
+
+    function renderGrid() {
+      grid.forEach((row, rowIndex) => {
+        const tr = document.createElement("tr");
+        row.forEach((char, colIndex) => {
+          const td = document.createElement("td");
+          td.textContent = char;
+          td.dataset.row = rowIndex;
+          td.dataset.col = colIndex;
+          td.addEventListener("mousedown", () => {
+            isMouseDown = true;
+            selectCell(td);
+          });
+          td.addEventListener("mouseover", () => {
+            if (isMouseDown) selectCell(td);
+          });
+          td.addEventListener("mouseup", () => {
+            isMouseDown = false;
+            checkSelectedWord();
+            clearSelection();
+          });
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
+    }
+
+    function selectCell(cell) {
+      if (!cell.classList.contains("selected") && !cell.classList.contains("found")) {
+        cell.classList.add("selected");
+        selectedCells.push(cell);
+      }
+    }
+
+    function getSelectedWord() {
+      return selectedCells.map(cell => cell.textContent).join('').toLowerCase();
+    }
+
+    function checkSelectedWord() {
+      const word = getSelectedWord();
+      const reversed = word.split('').reverse().join('');
+      if (cleanWords.includes(word) || cleanWords.includes(reversed)) {
+        selectedCells.forEach(cell => cell.classList.add("found"));
+        const matchIndex = cleanWords.indexOf(word) !== -1 ? cleanWords.indexOf(word) : cleanWords.indexOf(reversed);
+        document.getElementById(`word-${cleanWords[matchIndex]}`)?.classList.add("found");
+      }
+    }
+
+    function clearSelection() {
+      selectedCells.forEach(cell => cell.classList.remove("selected"));
+      selectedCells = [];
+    }
+
+    window.addEventListener("mouseup", () => {
+      isMouseDown = false;
+      checkSelectedWord();
+      clearSelection();
+    });
+
+    renderGrid();
+  </script>
+</body>
+</html>
